@@ -1,5 +1,6 @@
 package com.shockwave.pdfium;
 
+import android.net.Uri;
 import android.os.ParcelFileDescriptor;
 import android.support.v4.util.ArrayMap;
 
@@ -50,6 +51,66 @@ public class PdfDocument {
         public String getModDate() {
             return modDate;
         }
+    }
+
+    /**
+     * Position in X Y Coordinate system
+     */
+    public static class Position {
+        double x;
+        double y;
+
+        public double getX() {return x;}
+        public double getY() {return y;}
+    }
+
+    /**
+     * PDF links, used with annotations
+     */
+    public static class Link {
+        long mNativePtr;
+        PdfDocument.Dest dest;
+        PdfDocument.Action action;
+
+        public PdfDocument.Dest getDest() {return dest;}
+        public PdfDocument.Action getAction() {return action;}
+    }
+
+    /**
+     * PDF destionation, used with bookmarks and annotation links
+     */
+    public static class Dest {
+        long mNativePtr;
+        int pageIndex = -1;
+
+        public int getPageIndex() {return pageIndex;};
+    }
+
+    /**
+     * PDF action, used with bookmarks and annotation links
+     */
+    public static class Action {
+        public static final int TYPE_UNSUPPORTED = 0;
+        public static final int TYPE_DEST_INTERNAL = 1;
+        public static final int TYPE_DEST_EXTERNAL = 2;
+        public static final int TYPE_URI = 3;
+        public static final int TYPE_LAUNCH_APP = 4;
+
+        long mNativePtr;
+
+        /**
+         * Action types are:
+         * 0 Unsupported action type.
+         * 1 Go to a destination within current document.
+         * 2 Go to a destination within another document.
+         * 3 Universal Resource Identifier, including web pages and other Internet based
+         * resources.
+         * 4 Launch an application or open a file.
+         */
+        int type = TYPE_UNSUPPORTED;
+        Uri uri;
+
+        public Uri getUri() {return uri;}
     }
 
     public static class Bookmark {

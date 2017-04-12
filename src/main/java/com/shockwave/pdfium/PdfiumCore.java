@@ -2,12 +2,14 @@ package com.shockwave.pdfium;
 
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.net.Uri;
 import android.os.ParcelFileDescriptor;
 import android.util.Log;
 import android.view.Surface;
 
 import java.io.FileDescriptor;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
@@ -65,6 +67,20 @@ public class PdfiumCore {
     private native String nativeGetBookmarkTitle(long bookmarkPtr);
 
     private native long nativeGetBookmarkDestIndex(long docPtr, long bookmarkPtr);
+
+    private native Long nativeGetLinkAtPoint(long pagePtr, double x, double y);
+
+    private native Long nativeGetLinkDest(long docPtr, long linkPtr);
+
+    private native int nativeGetDestPageIndex(long docPtr, long destPtr);
+
+    private native Long nativeGetLinkAction(long linkPtr);
+
+    private native int nativeGetActionType(long actionPtr);
+
+    private native byte[] nativeGetActionURIPath(long docPtr, long actionPtr);
+
+    private native double[] nativeDeviceToPage(long pagePtr, int startX, int startY, int width, int height, int rotate, int deviceX, int deviceY);
 
     private static final Class FD_CLASS = FileDescriptor.class;
     private static final String FD_FIELD_NAME = "descriptor";
@@ -271,6 +287,85 @@ public class PdfiumCore {
             meta.modDate = nativeGetDocumentMetaText(doc.mNativeDocPtr, "ModDate");
 
             return meta;
+        }
+    }
+
+    public PdfDocument.Position deviceToPage(PdfDocument doc, int pageIndex, int startX, int startY, int width, int height, int rotate, int deviceX, int deviceY) {
+        synchronized (lock) {
+            Long pagePtr;
+            PdfDocument.Position pos = new PdfDocument.Position();
+
+            if ((pagePtr = doc.mNativePagesPtr.get(pageIndex)) != null) {
+                double[] posXY = nativeDeviceToPage(pagePtr, startX, startY, width, height, rotate, deviceX, deviceY);
+                pos.x = posXY[0];
+                pos.y = posXY[1];
+            }
+
+            return pos;
+        }
+    }
+
+    public PdfDocument.Link getLinkAtPoint(PdfDocument doc, int pageIndex, double x, double y) {
+        synchronized (lock) {
+            Long pagePtr;
+            if ((pagePtr = doc.mNativePagesPtr.get(pageIndex)) != null) {
+                Long linkPtr = nativeGetLinkAtPoint(pagePtr, x, y);
+                if (linkPtr != null) {
+                    PdfDocument.Link link = new PdfDocument.Link();
+                    link.mNativePtr = linkPtr;
+                    link.dest = this.getLinkDest(doc, link);
+                    if (link.dest == null) {
+                        link.action = this.getLinkAction(doc, link);
+                    }
+                    return link;
+                }
+            }
+
+            return null;
+        }
+    }
+
+    private PdfDocument.Dest getLinkDest(PdfDocument doc, PdfDocument.Link link) {
+        synchronized (lock) {
+            Long destPtr = nativeGetLinkDest(doc.mNativeDocPtr, link.mNativePtr);
+            if (destPtr != null) {
+                PdfDocument.Dest dest = new PdfDocument.Dest();
+                dest.mNativePtr = destPtr;
+                dest.pageIndex = nativeGetDestPageIndex(doc.mNativeDocPtr, destPtr);
+                return dest;
+            }
+
+            return null;
+        }
+    }
+
+    private PdfDocument.Action getLinkAction(PdfDocument doc, PdfDocument.Link link) {
+        synchronized (lock) {
+            Long actionPtr = nativeGetLinkAction(link.mNativePtr);
+            if (actionPtr != null) {
+                PdfDocument.Action action = new PdfDocument.Action();
+                action.mNativePtr = actionPtr;
+                action.type = nativeGetActionType(actionPtr);
+
+                if (action.type == PdfDocument.Action.TYPE_URI) {
+                    action.uri = getActionURI(doc, action);
+                }
+                return action;
+            }
+
+            return null;
+        }
+    }
+
+    private Uri getActionURI(PdfDocument doc, PdfDocument.Action action) {
+        synchronized (lock) {
+            byte[] uriBytes = nativeGetActionURIPath(doc.mNativeDocPtr, action.mNativePtr);
+            try {
+                return Uri.parse(new String(uriBytes, "US-ASCII"));
+            } catch(UnsupportedEncodingException e) {
+                Log.e("PdfiumCore", "Unsupported URI encoding: " + e.getMessage());
+                return null;
+            }
         }
     }
 
