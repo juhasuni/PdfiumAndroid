@@ -282,6 +282,7 @@ JNI_FUNC(jlong, PdfiumCore, nativeLoadPage)(JNI_ARGS, jlong docPtr, jint pageInd
     DocumentFile *doc = reinterpret_cast<DocumentFile*>(docPtr);
     return loadPageInternal(env, doc, (int)pageIndex);
 }
+
 JNI_FUNC(jlongArray, PdfiumCore, nativeLoadPages)(JNI_ARGS, jlong docPtr, jint fromIndex, jint toIndex){
     DocumentFile *doc = reinterpret_cast<DocumentFile*>(docPtr);
 
@@ -477,6 +478,90 @@ JNI_FUNC(void, PdfiumCore, nativeRenderPageBitmap)(JNI_ARGS, jlong pagePtr, jobj
                            0, flags );
 
     AndroidBitmap_unlockPixels(env, bitmap);
+}
+
+JNI_FUNC(jdoubleArray, PdfiumCore, nativeDeviceToPage)(JNI_ARGS, jlong pagePtr, jint startX, jint startY, jint width, jint height, jint rotate, jint deviceX, jint deviceY){
+    FPDF_PAGE page = reinterpret_cast<FPDF_PAGE>(pagePtr);
+
+    double pageX = 0;
+    double pageY = 0;
+
+    FPDF_DeviceToPage(page, startX, startY, width, height, rotate, deviceX, deviceY, &pageX, &pageY);
+
+    jdouble posXY[2] = {pageX, pageY};
+    jdoubleArray pos = env -> NewDoubleArray(2);
+    env -> SetDoubleArrayRegion(pos, 0, 2, (const jdouble*)posXY);
+    return pos;
+}
+
+
+JNI_FUNC(jobject, PdfiumCore, nativeGetLinkAtPoint)(JNI_ARGS, jlong pagePtr, jdouble x, jdouble y){
+    FPDF_PAGE page = reinterpret_cast<FPDF_PAGE>(pagePtr);
+    FPDF_LINK link = FPDFLink_GetLinkAtPoint(page, x, y);
+    if (link == NULL) {
+      return NULL;
+    }
+
+    return NewLong(env, reinterpret_cast<jlong>(link));
+}
+
+
+JNI_FUNC(jobject, PdfiumCore, nativeGetLinkDest)(JNI_ARGS, jlong docPtr, jlong linkPtr){
+    DocumentFile *doc = reinterpret_cast<DocumentFile*>(docPtr);
+    FPDF_LINK link = reinterpret_cast<FPDF_LINK*>(linkPtr);
+
+    FPDF_DEST dest = FPDFLink_GetDest(doc->pdfDocument, link);
+    if (dest == NULL) {
+      return NULL;
+    }
+
+    return NewLong(env, reinterpret_cast<jlong>(dest));
+}
+
+JNI_FUNC(jint, PdfiumCore, nativeGetDestPageIndex)(JNI_ARGS, jlong docPtr, jlong destPtr){
+    DocumentFile *doc = reinterpret_cast<DocumentFile*>(docPtr);
+    FPDF_DEST dest = reinterpret_cast<FPDF_LINK*>(destPtr);
+    return (jint)FPDFDest_GetPageIndex(doc->pdfDocument, dest);
+}
+
+JNI_FUNC(jobject, PdfiumCore, nativeGetLinkAction)(JNI_ARGS, jlong linkPtr){
+    FPDF_LINK link = reinterpret_cast<FPDF_LINK*>(linkPtr);
+    FPDF_ACTION action = FPDFLink_GetAction(link);
+    if (action == NULL) {
+      return NULL;
+    }
+
+    return NewLong(env, reinterpret_cast<jlong>(action));
+}
+
+JNI_FUNC(jint, PdfiumCore, nativeGetActionType)(JNI_ARGS, jlong actionPtr){
+    FPDF_ACTION action = reinterpret_cast<FPDF_ACTION*>(actionPtr);
+    return (jint)FPDFAction_GetType(action);
+}
+
+JNI_FUNC(jbyteArray, PdfiumCore, nativeGetActionURIPath)(JNI_ARGS, jlong docPtr, jlong actionPtr){
+    DocumentFile *doc = reinterpret_cast<DocumentFile*>(docPtr);
+    FPDF_ACTION action = reinterpret_cast<FPDF_ACTION*>(actionPtr);
+
+    size_t buffer_bytes = FPDFAction_GetURIPath(doc->pdfDocument, action, NULL, 0);
+    if (buffer_bytes <= 0) {
+      return env->NewByteArray(0);
+    }
+
+    std::wstring text;
+    void* data = WriteInto(&text, buffer_bytes + 1);
+
+    size_t bytes_written = FPDFAction_GetURIPath(doc->pdfDocument, action, data, buffer_bytes);
+    if (bytes_written > 0) {
+      text.resize(bytes_written - 1);
+
+      jbyteArray result = env->NewByteArray(bytes_written-1);
+      env->SetByteArrayRegion(result, 0, bytes_written-1, (const jbyte*)text.c_str());
+
+      return result;
+    } else {
+      return env->NewByteArray(0);
+    }
 }
 
 JNI_FUNC(jstring, PdfiumCore, nativeGetDocumentMetaText)(JNI_ARGS, jlong docPtr, jstring tag) {
