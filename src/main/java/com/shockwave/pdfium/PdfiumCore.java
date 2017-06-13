@@ -91,8 +91,8 @@ public class PdfiumCore {
     /* synchronize native methods */
     private static final Object lock = new Object();
 
-    public PdfiumCore(Context ctx) {
-        mCurrentDpi = ctx.getResources().getDisplayMetrics().densityDpi;
+    public PdfiumCore(int displayDensity) {
+        mCurrentDpi = displayDensity;
     }
 
     public static int getNumFd(ParcelFileDescriptor fdObj) {
@@ -147,6 +147,10 @@ public class PdfiumCore {
     public long openPage(PdfDocument doc, int pageIndex) {
         long pagePtr;
         synchronized (lock) {
+            if (doc.mNativePagesPtr.containsKey(pageIndex)) {
+                return doc.mNativePagesPtr.get(pageIndex);
+            }
+
             pagePtr = nativeLoadPage(doc.mNativeDocPtr, pageIndex);
             doc.mNativePagesPtr.put(pageIndex, pagePtr);
             return pagePtr;
