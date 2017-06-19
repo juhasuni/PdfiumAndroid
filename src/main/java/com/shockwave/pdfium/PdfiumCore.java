@@ -68,6 +68,8 @@ public class PdfiumCore {
 
     private native long nativeGetBookmarkDestIndex(long docPtr, long bookmarkPtr);
 
+    private native Long nativeGetBookmarkAction(long bookmarkPtr);
+
     private native Long nativeGetLinkAtPoint(long pagePtr, double x, double y);
 
     private native Long nativeGetLinkDest(long docPtr, long linkPtr);
@@ -389,6 +391,12 @@ public class PdfiumCore {
         bookmark.mNativePtr = bookmarkPtr;
         bookmark.title = nativeGetBookmarkTitle(bookmarkPtr);
         bookmark.pageIdx = nativeGetBookmarkDestIndex(doc.mNativeDocPtr, bookmarkPtr);
+
+        PdfDocument.Action action = getBookmarkAction(doc, bookmark);
+        if (action.type == PdfDocument.Action.TYPE_URI) {
+            bookmark.uri = action.getUri();
+        }
+
         tree.add(bookmark);
 
         Long child = nativeGetFirstChildBookmark(doc.mNativeDocPtr, bookmarkPtr);
@@ -399,6 +407,25 @@ public class PdfiumCore {
         Long sibling = nativeGetSiblingBookmark(doc.mNativeDocPtr, bookmarkPtr);
         if (sibling != null) {
             recursiveGetBookmark(tree, doc, sibling);
+        }
+    }
+
+    private PdfDocument.Action getBookmarkAction(PdfDocument doc, PdfDocument.Bookmark bookmark) {
+        synchronized (lock) {
+            Long actionPtr = nativeGetBookmarkAction(bookmark.mNativePtr);
+
+            if (actionPtr != null) {
+                PdfDocument.Action action = new PdfDocument.Action();
+                action.mNativePtr = actionPtr;
+                action.type = nativeGetActionType(actionPtr);
+
+                if (action.type == PdfDocument.Action.TYPE_URI) {
+                    action.uri = getActionURI(doc, action);
+                }
+                return action;
+            }
+
+            return null;
         }
     }
 }
