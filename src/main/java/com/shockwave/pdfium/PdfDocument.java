@@ -116,6 +116,7 @@ public class PdfDocument {
     public static class Bookmark {
         private List<Bookmark> children = new ArrayList<>();
         String title;
+        Uri uri;
         long pageIdx;
         long mNativePtr;
 
@@ -134,6 +135,8 @@ public class PdfDocument {
         public long getPageIdx() {
             return pageIdx;
         }
+
+        public Uri getUri() { return uri; }
     }
 
     /*package*/ PdfDocument() {
