@@ -632,4 +632,14 @@ JNI_FUNC(jlong, PdfiumCore, nativeGetBookmarkDestIndex)(JNI_ARGS, jlong docPtr, 
     return (jlong) FPDFDest_GetPageIndex(doc->pdfDocument, dest);
 }
 
+JNI_FUNC(jobject, PdfiumCore, nativeGetBookmarkAction)(JNI_ARGS, jlong bookmarkPtr) {
+    FPDF_BOOKMARK bookmark = reinterpret_cast<FPDF_BOOKMARK>(bookmarkPtr);
+    FPDF_ACTION action = FPDFBookmark_GetAction(bookmark);
+    if (action == NULL) {
+      return NULL;
+    }
+
+    return NewLong(env, reinterpret_cast<jlong>(action));
+}
+
 }//extern C
