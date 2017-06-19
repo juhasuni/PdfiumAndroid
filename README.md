@@ -1,5 +1,5 @@
 # Pdfium Android binding with Bitmap rendering
-Use pdfium library [from AOSP](https://android.googlesource.com/platform/external/pdfium/)
+Uses pdfium library [from AOSP](https://android.googlesource.com/platform/external/pdfium/)
 
 The demo app (for not modified lib) is [here](https://github.com/mshockwave/PdfiumAndroid-Demo-App)
 
@@ -7,14 +7,13 @@ Forked for use with [AndroidPdfViewer](https://github.com/barteksc/AndroidPdfVie
 
 API is highly compatible with original version, only additional methods were created.
 
-## What's new in 1.5.0?
-* Add method `PdfiumCore#newDocument(byte[])` for reading PDF documents from memory
-* Cleanup AndroidManifest.xml to solve problems with manifest merger
+## What's new in 1.6.1?
+* Fix bug from 1.6.0 - not embedded fonts was not rendered
 
 ## Installation
 Add to _build.gradle_:
 
-`compile 'com.github.barteksc:pdfium-android:1.5.0'`
+`compile 'com.github.barteksc:pdfium-android:1.6.1'`
 
 Library is available in jcenter and Maven Central repositories.
 
@@ -37,6 +36,8 @@ void openPdf() {
                 Bitmap.Config.ARGB_8888);
         pdfiumCore.renderPageBitmap(pdfDocument, bitmap, pageNum, 0, 0,
                 width, height);
+        //if you need to render annotations and form fields, you can use
+        //the same method above adding 'true' as last param
 
         iv.setImageBitmap(bitmap);
 

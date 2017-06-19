@@ -18,6 +18,9 @@ public class PdfiumCore {
     private static final String TAG = PdfiumCore.class.getName();
 
     static {
+
+        System.loadLibrary("modpng");
+        System.loadLibrary("modft2");
         System.loadLibrary("modpdfium");
         System.loadLibrary("jniPdfium");
     }

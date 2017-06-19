@@ -1,3 +1,10 @@
+## 1.6.1 (2017-06-09)
+* Fix bug from 1.6.0 - not embedded fonts was not rendered
+
+## 1.6.0 (2017-03-22)
+* Pdfium updated to newest version, from Android 7.1.1.
+It should fix many rendering issues and (thanks to freetype support) fix problems with fonts.
+
 ## 1.5.0 (2016-11-18)
 * Add method `PdfiumCore#newDocument(byte[])` for reading PDF documents from memory
 * Cleanup AndroidManifest.xml to solve problems with manifest merger
